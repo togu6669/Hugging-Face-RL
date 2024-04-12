@@ -1,12 +1,13 @@
 pip install git+https://github.com/DLR-RM/rl-baselines3-zoo@update/hf
 
 brew install swig cmake ffmpeg
+sudo apt-get install swig cmake ffmpeg
 
 pip install 'gymnasium[atari]'
 pip install 'gymnasium[accept-rom-license]'
 
-apt install python-opengl
-apt install xvfb
+sudo apt-get install -y python3-opengl
+sudo apt-get install xvfb
 pip3 install pyvirtualdisplay
 
 python -m rl_zoo3.train --algo dqn  --env SpaceInvadersNoFrameskip-v4 -f logs/ -c dqn.yml
