@@ -97,7 +97,7 @@ def parse_args():
         help="the target KL divergence threshold")
 
     # Adding HuggingFace argument
-    parser.add_argument("--repo-id", type=str, default="ThomasSimonini/ppo-CartPole-v1", help="id of the model repository from the Hugging Face Hub {username/repo_name}")
+    parser.add_argument("--repo-id", type=str, default="togu6669/ppo-CartPole-v1", help="id of the model repository from the Hugging Face Hub {username/repo_name}")
 
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)
@@ -206,7 +206,7 @@ def _evaluate_agent(env, n_eval_episodes, policy):
     """
     episode_rewards = []
     for episode in range(n_eval_episodes):
-        state = env.reset()
+        state, info = env.reset(seed = args.seed)
         step = 0
         done = False
         total_rewards_ep = 0
@@ -214,7 +214,7 @@ def _evaluate_agent(env, n_eval_episodes, policy):
         while done is False:
             state = torch.Tensor(state).to(device)
             action, _, _, _ = policy.get_action_and_value(state)
-            new_state, reward, done, info = env.step(action.cpu().numpy())
+            new_state, reward, done, trunc, info = env.step(action.cpu().numpy())
             total_rewards_ep += reward
             if done:
                 break
@@ -228,18 +228,18 @@ def _evaluate_agent(env, n_eval_episodes, policy):
 
 def record_video(env, policy, out_directory, fps=30):
     images = []
-    done = False
-    state = env.reset()
-    img = env.render(mode="rgb_array")
+    done = False 
+    state, info = env.reset(seed = args.seed)
+    img = env.render()
     images.append(img)
     while not done:
         state = torch.Tensor(state).to(device)
         # Take the action (index) that have the maximum expected future reward given that state
         action, _, _, _ = policy.get_action_and_value(state)
-        state, reward, done, info = env.step(
+        state, reward, done, trunc, info = env.step(
             action.cpu().numpy()
         )  # We directly put next_state = state for recording logic
-        img = env.render(mode="rgb_array")
+        img = env.render()
         images.append(img)
     imageio.mimsave(out_directory, [np.array(img) for i, img in enumerate(images)], fps=fps)
 
@@ -596,12 +596,12 @@ if __name__ == "__main__":
     writer.close()
 
     # Create the evaluation environment
-    # eval_env = gym.make(args.env_id)
+    eval_env = gym.make(args.env_id)
 
-    # package_to_hub(
-    #     repo_id=args.repo_id,
-    #     model=agent,  # The model we want to save
-    #     hyperparameters=args,
-    #     eval_env=gym.make(args.env_id),
-    #     logs=f"runs/{run_name}",
-    # )
+    package_to_hub(
+        repo_id=args.repo_id,
+        model=agent,  # The model we want to save
+        hyperparameters=args,
+        eval_env=gym.make(args.env_id, render_mode="rgb_array"),
+        logs=f"runs/{run_name}",
+    )
